@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Trail & Operation Log Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            background: #fff;
+            border-bottom: 2px solid #e0e0e0;
+            padding: 0 30px;
+        }
+
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            font-weight: 500;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .search-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .search-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h4 {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .badge-info { background: #d1ecf1; color: #0c5460; }
+        .badge-primary { background: #cce5ff; color: #004085; }
+
+        .alert {
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .details-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .details-panel h4 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 10px;
+        }
+
+        .details-grid dt {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .details-grid dd {
+            color: #333;
+        }
+
+        .timestamp {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .operation-type {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .change-indicator {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            margin-left: 5px;
+        }
+
+        .change-added { background: #d4edda; color: #155724; }
+        .change-modified { background: #fff3cd; color: #856404; }
+        .change-deleted { background: #f8d7da; color: #721c24; }
+
+        .filter-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .filter-tag {
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-tag button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Audit Trail & Operation Log Viewer</h1>
+            <p>Monitor and track all operations, changes, and activities in your Camunda workflow</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('operation-log')">
+                📋 Operation Log
+            </button>
+            <button class="tab" onclick="switchTab('audit-trail')">
+                🔐 Audit Trail
+            </button>
+            <button class="tab" onclick="switchTab('process-history')">
+                📊 Process History
+            </button>
+        </div>
+
+        <div class="content">
+            <!-- Operation Log Tab -->
+            <div id="operation-log" class="tab-content active">
+                <div class="search-section">
+                    <h3>🔎 Filter Operation Logs</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Process Instance ID</label>
+                            <input type="text" id="oplog-processInstanceId" placeholder="Enter process instance ID">
+                        </div>
+                        <div class="form-group">
+                            <label>User ID</label>
+                            <input type="text" id="oplog-userId" placeholder="Enter user ID">
+                        </div>
+                        <div class="form-group">
+                            <label>Operation Type</label>
+                            <select id="oplog-operationType">
+                                <option value="">All Operations</option>
+                                <option value="Create">Create</option>
+                                <option value="Update">Update</option>
+                                <option value="Delete">Delete</option>
+                                <option value="Activate">Activate</option>
+                                <option value="Suspend">Suspend</option>
+                                <option value="Complete">Complete</option>
+                                <option value="Claim">Claim</option>
+                                <option value="SetVariable">Set Variable</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Entity Type</label>
+                            <select id="oplog-entityType">
+                                <option value="">All Entities</option>
+                                <option value="ProcessInstance">Process Instance</option>
+                                <option value="Task">Task</option>
+                                <option value="Variable">Variable</option>
+                                <option value="Job">Job</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>From Date</label>
+                            <input type="date" id="oplog-fromDate">
+                        </div>
+                        <div class="form-group">
+                            <label>To Date</label>
+                            <input type="date" id="oplog-toDate">
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="loadOperationLogs()">
+                            🔍 Search
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearOperationLogFilters()">
+                            🔄 Clear Filters
+                        </button>
+                        <button class="btn btn-success" onclick="exportOperationLogs()">
+                            📥 Export CSV
+                        </button>
+                    </div>
+                    <div id="oplog-filter-tags" class="filter-tags"></div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>Total Operations</h4>
+                        <div class="number" id="oplog-total">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Today's Operations</h4>
+                        <div class="number" id="oplog-today">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Unique Users</h4>
+                        <div class="number" id="oplog-users">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Failed Operations</h4>
+                        <div class="number" id="oplog-failed">0</div>
+                    </div>
+                </div>
+
+                <div id="oplog-error" class="alert alert-error" style="display: none;"></div>
+                <div id="oplog-results"></div>
+            </div>
+
+            <!-- Audit Trail Tab -->
+            <div id="audit-trail" class="tab-content">
+                <div class="search-section">
+                    <h3>🔎 Search Audit Trail</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Process Instance ID</label>
+                            <input type="text" id="audit-processInstanceId" placeholder="Enter process instance ID">
+                        </div>
+                        <div class="form-group">
+                            <label>Process Definition Key</label>
+                            <input type="text" id="audit-processDefKey" placeholder="e.g., loanApprovalApp">
+                        </div>
+                        <div class="form-group">
+                            <label>Activity Type</label>
+                            <select id="audit-activityType">
+                                <option value="">All Activities</option>
+                                <option value="startEvent">Start Event</option>
+                                <option value="endEvent">End Event</option>
+                                <option value="userTask">User Task</option>
+                                <option value="serviceTask">Service Task</option>
+                                <option value="exclusiveGateway">Exclusive Gateway</option>
+                                <option value="parallelGateway">Parallel Gateway</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="loadAuditTrail()">
+                            🔍 Search
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearAuditFilters()">
+                            🔄 Clear Filters
+                        </button>
+                        <button class="btn btn-success" onclick="exportAuditTrail()">
+                            📥 Export CSV
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>Total Activities</h4>
+                        <div class="number" id="audit-total">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Completed</h4>
+                        <div class="number" id="audit-completed">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Active</h4>
+                        <div class="number" id="audit-active">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Avg Duration</h4>
+                        <div class="number" id="audit-avgDuration">0s</div>
+                    </div>
+                </div>
+
+                <div id="audit-error" class="alert alert-error" style="display: none;"></div>
+                <div id="audit-results"></div>
+            </div>
+
+            <!-- Process History Tab -->
+            <div id="process-history" class="tab-content">
+                <div class="search-section">
+                    <h3>🔎 Search Process History</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Process Instance ID</label>
+                            <input type="text" id="history-processInstanceId" placeholder="Enter process instance ID">
+                        </div>
+                        <div class="form-group">
+                            <label>Process Definition Key</label>
+                            <input type="text" id="history-processDefKey" placeholder="e.g., loanApprovalApp">
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select id="history-status">
+                                <option value="">All</option>
+                                <option value="finished">Finished</option>
+                                <option value="running">Running</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="loadProcessHistory()">
+                            🔍 Search
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearHistoryFilters()">
+                            🔄 Clear Filters
+                        </button>
+                    </div>
+                </div>
+
+                <div id="history-error" class="alert alert-error" style="display: none;"></div>
+                <div id="history-results"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080';
+        const CAMUNDA_API = `${API_BASE}/engine-rest`;
+        const CUSTOM_API = `${API_BASE}/api/history`;
+
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        // Operation Log Functions
+        async function loadOperationLogs() {
+            showLoading('oplog-results');
+            hideError('oplog-error');
+
+            try {
+                const params = buildOperationLogParams();
+                const url = `${CAMUNDA_API}/history/user-operation?${params}`;
+                const logs = await fetch(url).then(r => r.json());
+
+                updateOperationLogStats(logs);
+                displayOperationLogs(logs);
+            } catch (error) {
+                showError('oplog-error', 'Error loading operation logs: ' + error.message);
+                document.getElementById('oplog-results').innerHTML = '';
+            }
+        }
+
+        function buildOperationLogParams() {
+            const params = new URLSearchParams();
+
+            const processInstanceId = document.getElementById('oplog-processInstanceId').value.trim();
+            const userId = document.getElementById('oplog-userId').value.trim();
+            const operationType = document.getElementById('oplog-operationType').value;
+            const entityType = document.getElementById('oplog-entityType').value;
+
+            if (processInstanceId) params.append('processInstanceId', processInstanceId);
+            if (userId) params.append('userId', userId);
+            if (operationType) params.append('operationType', operationType);
+            if (entityType) params.append('entityType', entityType);
+
+            params.append('sortBy', 'timestamp');
+            params.append('sortOrder', 'desc');
+            params.append('maxResults', '1000');
+
+            return params.toString();
+        }
+
+        function updateOperationLogStats(logs) {
+            document.getElementById('oplog-total').textContent = logs.length;
+
+            const today = new Date().toDateString();
+            const todayLogs = logs.filter(log =>
+                new Date(log.timestamp).toDateString() === today
+            );
+            document.getElementById('oplog-today').textContent = todayLogs.length;
+
+            const uniqueUsers = new Set(logs.map(log => log.userId).filter(Boolean));
+            document.getElementById('oplog-users').textContent = uniqueUsers.size;
+
+            document.getElementById('oplog-failed').textContent = '0';
+        }
+
+        function displayOperationLogs(logs) {
+            if (!logs || logs.length === 0) {
+                document.getElementById('oplog-results').innerHTML = `
+                    <div class="empty-state">
+                        <h3>No operation logs found</h3>
+                        <p>Try adjusting your filters</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>User</th>
+                            <th>Operation</th>
+                            <th>Entity Type</th>
+                            <th>Process Instance</th>
+                            <th>Property</th>
+                            <th>Change</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${logs.map(log => `
+                            <tr>
+                                <td class="timestamp">${formatDateTime(log.timestamp)}</td>
+                                <td>${log.userId || 'System'}</td>
+                                <td>
+                                    <span class="badge badge-${getOperationBadgeClass(log.operationType)}">
+                                        ${log.operationType}
+                                    </span>
+                                </td>
+                                <td>${log.entityType || '-'}</td>
+                                <td>
+                                    ${log.processInstanceId ?
+                                        `<a href="#" onclick="viewProcessDetails('${log.processInstanceId}')">${shortenId(log.processInstanceId)}</a>` :
+                                        '-'
+                                    }
+                                </td>
+                                <td>${log.property || '-'}</td>
+                                <td>
+                                    ${log.orgValue !== null && log.orgValue !== undefined ?
+                                        `<span class="change-deleted">${log.orgValue}</span>` :
+                                        ''
+                                    }
+                                    ${log.orgValue !== null && log.newValue !== null ? ' → ' : ''}
+                                    ${log.newValue !== null && log.newValue !== undefined ?
+                                        `<span class="change-added">${log.newValue}</span>` :
+                                        ''
+                                    }
+                                </td>
+                                <td>
+                                    <button class="btn btn-primary" onclick='showOperationDetails(${JSON.stringify(log)})'>
+                                        Details
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            document.getElementById('oplog-results').innerHTML = html;
+        }
+
+        function showOperationDetails(log) {
+            const details = `
+                <div class="details-panel">
+                    <h4>Operation Details</h4>
+                    <dl class="details-grid">
+                        <dt>Operation ID:</dt>
+                        <dd>${log.id}</dd>
+                        <dt>User:</dt>
+                        <dd>${log.userId || 'System'}</dd>
+                        <dt>Operation Type:</dt>
+                        <dd>${log.operationType}</dd>
+                        <dt>Entity Type:</dt>
+                        <dd>${log.entityType || '-'}</dd>
+                        <dt>Process Instance:</dt>
+                        <dd>${log.processInstanceId || '-'}</dd>
+                        <dt>Process Definition:</dt>
+                        <dd>${log.processDefinitionKey || '-'}</dd>
+                        <dt>Deployment:</dt>
+                        <dd>${log.deploymentId || '-'}</dd>
+                        <dt>Timestamp:</dt>
+                        <dd>${formatDateTime(log.timestamp)}</dd>
+                        <dt>Property:</dt>
+                        <dd>${log.property || '-'}</dd>
+                        <dt>Original Value:</dt>
+                        <dd>${log.orgValue !== null ? log.orgValue : '-'}</dd>
+                        <dt>New Value:</dt>
+                        <dd>${log.newValue !== null ? log.newValue : '-'}</dd>
+                    </dl>
+                </div>
+            `;
+
+            alert('Operation Details:\n\n' + JSON.stringify(log, null, 2));
+        }
+
+        // Audit Trail Functions
+        async function loadAuditTrail() {
+            showLoading('audit-results');
+            hideError('audit-error');
+
+            try {
+                const processInstanceId = document.getElementById('audit-processInstanceId').value.trim();
+                const processDefKey = document.getElementById('audit-processDefKey').value.trim();
+                const activityType = document.getElementById('audit-activityType').value;
+
+                const params = new URLSearchParams();
+                if (processInstanceId) params.append('processInstanceId', processInstanceId);
+                if (processDefKey) params.append('processDefinitionKey', processDefKey);
+                if (activityType) params.append('activityType', activityType);
+                params.append('sortBy', 'startTime');
+                params.append('sortOrder', 'desc');
+
+                const url = `${CAMUNDA_API}/history/activity-instance?${params.toString()}`;
+                const activities = await fetch(url).then(r => r.json());
+
+                updateAuditStats(activities);
+                displayAuditTrail(activities);
+            } catch (error) {
+                showError('audit-error', 'Error loading audit trail: ' + error.message);
+                document.getElementById('audit-results').innerHTML = '';
+            }
+        }
+
+        function updateAuditStats(activities) {
+            document.getElementById('audit-total').textContent = activities.length;
+
+            const completed = activities.filter(a => a.endTime !== null);
+            document.getElementById('audit-completed').textContent = completed.length;
+
+            const active = activities.filter(a => a.endTime === null);
+            document.getElementById('audit-active').textContent = active.length;
+
+            const avgDuration = completed.length > 0 ?
+                completed.reduce((sum, a) => sum + (a.durationInMillis || 0), 0) / completed.length / 1000 :
+                0;
+            document.getElementById('audit-avgDuration').textContent = avgDuration.toFixed(1) + 's';
+        }
+
+        function displayAuditTrail(activities) {
+            if (!activities || activities.length === 0) {
+                document.getElementById('audit-results').innerHTML = `
+                    <div class="empty-state">
+                        <h3>No audit trail found</h3>
+                        <p>Try adjusting your filters</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Activity Name</th>
+                            <th>Type</th>
+                            <th>Process Instance</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${activities.map(activity => `
+                            <tr>
+                                <td><strong>${activity.activityName || activity.activityId}</strong></td>
+                                <td>
+                                    <span class="badge badge-info">
+                                        ${activity.activityType}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="#" onclick="viewProcessDetails('${activity.processInstanceId}')">
+                                        ${shortenId(activity.processInstanceId)}
+                                    </a>
+                                </td>
+                                <td class="timestamp">${formatDateTime(activity.startTime)}</td>
+                                <td class="timestamp">
+                                    ${activity.endTime ? formatDateTime(activity.endTime) :
+                                        '<span class="badge badge-warning">Running</span>'}
+                                </td>
+                                <td>
+                                    ${activity.durationInMillis ?
+                                        formatDuration(activity.durationInMillis) :
+                                        '-'}
+                                </td>
+                                <td>
+                                    ${activity.endTime ?
+                                        '<span class="badge badge-success">Completed</span>' :
+                                        '<span class="badge badge-warning">Active</span>'}
+                                </td>
+                                <td>
+                                    <button class="btn btn-primary" onclick='showActivityDetails(${JSON.stringify(activity)})'>
+                                        Details
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            document.getElementById('audit-results').innerHTML = html;
+        }
+
+        function showActivityDetails(activity) {
+            alert('Activity Details:\n\n' + JSON.stringify(activity, null, 2));
+        }
+
+        // Process History Functions
+        async function loadProcessHistory() {
+            showLoading('history-results');
+            hideError('history-error');
+
+            try {
+                const processInstanceId = document.getElementById('history-processInstanceId').value.trim();
+                const processDefKey = document.getElementById('history-processDefKey').value.trim();
+                const status = document.getElementById('history-status').value;
+
+                let url;
+                if (processInstanceId) {
+                    url = `${CUSTOM_API}/process-instance/${processInstanceId}`;
+                    const process = await fetch(url).then(r => r.json());
+                    displaySingleProcessHistory(process);
+                } else {
+                    url = status === 'finished' ?
+                        `${CUSTOM_API}/finished-processes` :
+                        status === 'running' ?
+                        `${CUSTOM_API}/running-processes` :
+                        `${CAMUNDA_API}/history/process-instance`;
+
+                    const params = new URLSearchParams();
+                    if (processDefKey) params.append('processDefinitionKey', processDefKey);
+
+                    const processes = await fetch(`${url}?${params.toString()}`).then(r => r.json());
+                    displayProcessList(processes);
+                }
+            } catch (error) {
+                showError('history-error', 'Error loading process history: ' + error.message);
+                document.getElementById('history-results').innerHTML = '';
+            }
+        }
+
+        function displaySingleProcessHistory(process) {
+            const html = `
+                <div class="details-panel">
+                    <h4>Process Instance: ${process.id}</h4>
+                    <dl class="details-grid">
+                        <dt>Definition Key:</dt>
+                        <dd>${process.processDefinitionKey}</dd>
+                        <dt>State:</dt>
+                        <dd>
+                            <span class="badge badge-${process.state === 'COMPLETED' ? 'success' : 'warning'}">
+                                ${process.state || 'ACTIVE'}
+                            </span>
+                        </dd>
+                        <dt>Start Time:</dt>
+                        <dd>${formatDateTime(process.startTime)}</dd>
+                        <dt>End Time:</dt>
+                        <dd>${process.endTime ? formatDateTime(process.endTime) : 'Still running'}</dd>
+                        <dt>Duration:</dt>
+                        <dd>${process.durationInMillis ? formatDuration(process.durationInMillis) : 'N/A'}</dd>
+                    </dl>
+                </div>
+            `;
+            document.getElementById('history-results').innerHTML = html;
+        }
+
+        function displayProcessList(processes) {
+            if (!processes || processes.length === 0) {
+                document.getElementById('history-results').innerHTML = `
+                    <div class="empty-state">
+                        <h3>No processes found</h3>
+                        <p>Try adjusting your filters</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Process Instance ID</th>
+                            <th>Definition</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>State</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${processes.map(process => `
+                            <tr>
+                                <td>${shortenId(process.id)}</td>
+                                <td>${process.processDefinitionKey}</td>
+                                <td class="timestamp">${formatDateTime(process.startTime)}</td>
+                                <td class="timestamp">
+                                    ${process.endTime ? formatDateTime(process.endTime) :
+                                        '<span class="badge badge-warning">Running</span>'}
+                                </td>
+                                <td>${process.durationInMillis ? formatDuration(process.durationInMillis) : '-'}</td>
+                                <td>
+                                    <span class="badge badge-${process.state === 'COMPLETED' ? 'success' : 'warning'}">
+                                        ${process.state || 'ACTIVE'}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-primary" onclick="viewProcessDetails('${process.id}')">
+                                        View Details
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            document.getElementById('history-results').innerHTML = html;
+        }
+
+        // Helper Functions
+        async function viewProcessDetails(processInstanceId) {
+            showLoading('history-results');
+            hideError('history-error');
+
+            // Switch to process history tab
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.querySelectorAll('.tab')[2].classList.add('active');
+            document.getElementById('process-history').classList.add('active');
+
+            // Set the process instance ID
+            document.getElementById('history-processInstanceId').value = processInstanceId;
+
+            // Load the process details
+            try {
+                const [process, activities, tasks, variables] = await Promise.all([
+                    fetch(`${CUSTOM_API}/process-instance/${processInstanceId}`).then(r => r.json()),
+                    fetch(`${CUSTOM_API}/process-instance/${processInstanceId}/activities`).then(r => r.json()),
+                    fetch(`${CUSTOM_API}/process-instance/${processInstanceId}/tasks`).then(r => r.json()),
+                    fetch(`${CUSTOM_API}/process-instance/${processInstanceId}/variables`).then(r => r.json())
+                ]);
+
+                displayDetailedProcessHistory(process, activities, tasks, variables);
+            } catch (error) {
+                showError('history-error', 'Error loading process details: ' + error.message);
+                document.getElementById('history-results').innerHTML = '';
+            }
+        }
+
+        function displayDetailedProcessHistory(process, activities, tasks, variables) {
+            const html = `
+                <div class="details-panel">
+                    <h4>📊 Process Instance: ${process.id}</h4>
+                    <dl class="details-grid">
+                        <dt>Definition Key:</dt>
+                        <dd><strong>${process.processDefinitionKey}</strong></dd>
+                        <dt>Definition Name:</dt>
+                        <dd>${process.processDefinitionName || 'N/A'}</dd>
+                        <dt>State:</dt>
+                        <dd>
+                            <span class="badge badge-${process.state === 'COMPLETED' ? 'success' : 'warning'}">
+                                ${process.state || 'ACTIVE'}
+                            </span>
+                        </dd>
+                        <dt>Start Time:</dt>
+                        <dd>${formatDateTime(process.startTime)}</dd>
+                        <dt>End Time:</dt>
+                        <dd>${process.endTime ? formatDateTime(process.endTime) : '<span class="badge badge-warning">Still running</span>'}</dd>
+                        <dt>Duration:</dt>
+                        <dd>${process.durationInMillis ? formatDuration(process.durationInMillis) : 'N/A'}</dd>
+                        <dt>Business Key:</dt>
+                        <dd>${process.businessKey || 'N/A'}</dd>
+                        <dt>Start User:</dt>
+                        <dd>${process.startUserId || 'System'}</dd>
+                        <dt>Delete Reason:</dt>
+                        <dd>${process.deleteReason || 'N/A'}</dd>
+                    </dl>
+                </div>
+
+                <h3 style="margin-top: 30px;">🔄 Activities (${activities.length})</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Activity Name</th>
+                            <th>Activity Type</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${activities.map(a => `
+                            <tr>
+                                <td><strong>${a.activityName || a.activityId}</strong></td>
+                                <td>
+                                    <span class="badge badge-info">
+                                        ${a.activityType}
+                                    </span>
+                                </td>
+                                <td class="timestamp">${formatDateTime(a.startTime)}</td>
+                                <td class="timestamp">
+                                    ${a.endTime ? formatDateTime(a.endTime) : '<span class="badge badge-warning">Running</span>'}
+                                </td>
+                                <td>${a.durationInMillis ? formatDuration(a.durationInMillis) : 'N/A'}</td>
+                                <td>
+                                    ${a.endTime ?
+                                        '<span class="badge badge-success">Completed</span>' :
+                                        '<span class="badge badge-warning">Active</span>'}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <h3 style="margin-top: 30px;">✅ Tasks (${tasks.length})</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Task Name</th>
+                            <th>Assignee</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tasks.map(t => `
+                            <tr>
+                                <td><strong>${t.name || t.taskDefinitionKey}</strong></td>
+                                <td>${t.assignee || '<span class="badge badge-warning">Unassigned</span>'}</td>
+                                <td class="timestamp">${formatDateTime(t.startTime)}</td>
+                                <td class="timestamp">
+                                    ${t.endTime ? formatDateTime(t.endTime) : '<span class="badge badge-warning">Not completed</span>'}
+                                </td>
+                                <td>${t.durationInMillis ? formatDuration(t.durationInMillis) : 'N/A'}</td>
+                                <td>
+                                    ${t.endTime ?
+                                        '<span class="badge badge-success">Completed</span>' :
+                                        '<span class="badge badge-warning">Pending</span>'}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <h3 style="margin-top: 30px;">📝 Variables (${variables.length})</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Variable Name</th>
+                            <th>Type</th>
+                            <th>Value</th>
+                            <th>Create Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${variables.map(v => `
+                            <tr>
+                                <td><strong>${v.name}</strong></td>
+                                <td>
+                                    <span class="badge badge-primary">
+                                        ${v.variableTypeName || v.type}
+                                    </span>
+                                </td>
+                                <td>${formatVariableValue(v.value)}</td>
+                                <td class="timestamp">${formatDateTime(v.createTime)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-secondary" onclick="loadProcessHistory()">
+                        ← Back to Process List
+                    </button>
+                </div>
+            `;
+
+            document.getElementById('history-results').innerHTML = html;
+        }
+
+        function formatVariableValue(value) {
+            if (value === null || value === undefined) return '-';
+            if (typeof value === 'object') return JSON.stringify(value);
+            return String(value);
+        }
+
+        function clearOperationLogFilters() {
+            document.getElementById('oplog-processInstanceId').value = '';
+            document.getElementById('oplog-userId').value = '';
+            document.getElementById('oplog-operationType').value = '';
+            document.getElementById('oplog-entityType').value = '';
+            document.getElementById('oplog-fromDate').value = '';
+            document.getElementById('oplog-toDate').value = '';
+        }
+
+        function clearAuditFilters() {
+            document.getElementById('audit-processInstanceId').value = '';
+            document.getElementById('audit-processDefKey').value = '';
+            document.getElementById('audit-activityType').value = '';
+        }
+
+        function clearHistoryFilters() {
+            document.getElementById('history-processInstanceId').value = '';
+            document.getElementById('history-processDefKey').value = '';
+            document.getElementById('history-status').value = '';
+        }
+
+        function exportOperationLogs() {
+            alert('Export feature will download operation logs as CSV');
+        }
+
+        function exportAuditTrail() {
+            alert('Export feature will download audit trail as CSV');
+        }
+
+        function showLoading(elementId) {
+            document.getElementById(elementId).innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading data...</p>
+                </div>
+            `;
+        }
+
+        function showError(elementId, message) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.style.display = 'block';
+        }
+
+        function hideError(elementId) {
+            document.getElementById(elementId).style.display = 'none';
+        }
+
+        function formatDateTime(timestamp) {
+            if (!timestamp) return '-';
+            return new Date(timestamp).toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        function formatDuration(milliseconds) {
+            const seconds = Math.floor(milliseconds / 1000);
+            if (seconds < 60) return `${seconds}s`;
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes}m ${seconds % 60}s`;
+            const hours = Math.floor(minutes / 60);
+            return `${hours}h ${minutes % 60}m`;
+        }
+
+        function shortenId(id) {
+            if (!id) return '-';
+            return id.length > 12 ? id.substring(0, 12) + '...' : id;
+        }
+
+        function getOperationBadgeClass(operationType) {
+            const types = {
+                'Create': 'success',
+                'Update': 'info',
+                'Delete': 'danger',
+                'Complete': 'success',
+                'Claim': 'primary',
+                'Activate': 'success',
+                'Suspend': 'warning'
+            };
+            return types[operationType] || 'info';
+        }
+
+        // Auto-load on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadOperationLogs();
+        });
+    </script>
+</body>
+</html>
+

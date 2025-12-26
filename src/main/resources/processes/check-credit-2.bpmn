@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  targetNamespace="http://example.com/credit">
+
+  <!-- ================= PROCESS ================= -->
+  <bpmn:process id="checkCreditProcess2"
+                name="Check Credit Process"
+                isExecutable="true"
+                camunda:historyTimeToLive="180">
+
+    <bpmn:startEvent id="start" name="Start"/>
+
+    <bpmn:serviceTask id="checkCreditTask"
+                      name="Check Credit"
+                      camunda:class="com.truemoney.workflowengine.delegate.CreditCheckDelegate"/>
+
+    <bpmn:exclusiveGateway id="decisionGateway"
+                           name="Approved?"/>
+
+    <bpmn:endEvent id="approvedEnd" name="Approved"/>
+    <bpmn:endEvent id="rejectedEnd" name="Rejected"/>
+
+    <bpmn:sequenceFlow id="flow1"
+                       sourceRef="start"
+                       targetRef="checkCreditTask"/>
+
+    <bpmn:sequenceFlow id="flow2"
+                       sourceRef="checkCreditTask"
+                       targetRef="decisionGateway"/>
+
+    <bpmn:sequenceFlow id="flowApproved"
+                       sourceRef="decisionGateway"
+                       targetRef="approvedEnd">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">
+        ${approved == true}
+      </bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+    <bpmn:sequenceFlow id="flowRejected"
+                       sourceRef="decisionGateway"
+                       targetRef="rejectedEnd">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">
+        ${approved == false}
+      </bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+
+  </bpmn:process>
+
+  <!-- ================= DIAGRAM (BPMN DI) ================= -->
+  <bpmndi:BPMNDiagram id="BPMNDiagram_checkCredit">
+    <bpmndi:BPMNPlane id="BPMNPlane_checkCredit"
+                      bpmnElement="checkCreditProcess">
+
+      <bpmndi:BPMNShape id="shape_start" bpmnElement="start">
+        <dc:Bounds x="100" y="140" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="shape_task" bpmnElement="checkCreditTask">
+        <dc:Bounds x="200" y="120" width="140" height="80"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="shape_gateway" bpmnElement="decisionGateway">
+        <dc:Bounds x="380" y="135" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="shape_approved" bpmnElement="approvedEnd">
+        <dc:Bounds x="520" y="100" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNShape id="shape_rejected" bpmnElement="rejectedEnd">
+        <dc:Bounds x="520" y="180" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="edge_flow1" bpmnElement="flow1">
+        <di:waypoint x="136" y="158"/>
+        <di:waypoint x="200" y="158"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="edge_flow2" bpmnElement="flow2">
+        <di:waypoint x="340" y="158"/>
+        <di:waypoint x="380" y="158"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="edge_flowApproved" bpmnElement="flowApproved">
+        <di:waypoint x="430" y="158"/>
+        <di:waypoint x="520" y="118"/>
+      </bpmndi:BPMNEdge>
+
+      <bpmndi:BPMNEdge id="edge_flowRejected" bpmnElement="flowRejected">
+        <di:waypoint x="430" y="158"/>
+        <di:waypoint x="520" y="198"/>
+      </bpmndi:BPMNEdge>
+
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+
+</bpmn:definitions>

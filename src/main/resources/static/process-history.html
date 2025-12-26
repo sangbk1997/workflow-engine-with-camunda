@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Process History Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        h1 { color: #333; }
+        .search-box {
+            margin: 20px 0;
+            padding: 10px;
+            background: #f5f5f5;
+        }
+        input {
+            padding: 8px;
+            margin-right: 10px;
+            width: 300px;
+        }
+        button {
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover { background: #0056b3; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        .details {
+            background: #f9f9f9;
+            padding: 15px;
+            margin-top: 20px;
+            border-left: 4px solid #007bff;
+        }
+        .error {
+            color: red;
+            padding: 10px;
+            background: #ffe6e6;
+            border-left: 4px solid red;
+        }
+    </style>
+</head>
+<body>
+    <h1>📊 Process History Viewer</h1>
+
+    <div class="search-box">
+        <h3>Search Process Instance</h3>
+        <input type="text" id="processInstanceId" placeholder="Enter Process Instance ID">
+        <button onclick="loadProcessHistory()">Load History</button>
+        <button onclick="loadFinishedProcesses()">Show All Finished</button>
+        <button onclick="loadRunningProcesses()">Show All Running</button>
+    </div>
+
+    <div id="error" class="error" style="display: none;"></div>
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api/history';
+
+        async function loadProcessHistory() {
+            const instanceId = document.getElementById('processInstanceId').value.trim();
+            if (!instanceId) {
+                showError('Please enter a Process Instance ID');
+                return;
+            }
+
+            try {
+                hideError();
+                const [process, activities, tasks, variables] = await Promise.all([
+                    fetch(`${API_BASE}/process-instance/${instanceId}`).then(r => r.json()),
+                    fetch(`${API_BASE}/process-instance/${instanceId}/activities`).then(r => r.json()),
+                    fetch(`${API_BASE}/process-instance/${instanceId}/tasks`).then(r => r.json()),
+                    fetch(`${API_BASE}/process-instance/${instanceId}/variables`).then(r => r.json())
+                ]);
+
+                displayProcessDetails(process, activities, tasks, variables);
+            } catch (error) {
+                showError('Error loading process history: ' + error.message);
+            }
+        }
+
+        async function loadFinishedProcesses() {
+            try {
+                hideError();
+                const processes = await fetch(`${API_BASE}/finished-processes`).then(r => r.json());
+                displayProcessList(processes, 'Finished Processes');
+            } catch (error) {
+                showError('Error loading finished processes: ' + error.message);
+            }
+        }
+
+        async function loadRunningProcesses() {
+            try {
+                hideError();
+                const processes = await fetch(`${API_BASE}/running-processes`).then(r => r.json());
+                displayProcessList(processes, 'Running Processes');
+            } catch (error) {
+                showError('Error loading running processes: ' + error.message);
+            }
+        }
+
+        function displayProcessDetails(process, activities, tasks, variables) {
+            const html = `
+                <div class="details">
+                    <h2>Process Instance: ${process.id}</h2>
+                    <p><strong>Definition:</strong> ${process.processDefinitionKey} (${process.processDefinitionName || 'N/A'})</p>
+                    <p><strong>State:</strong> ${process.state || 'ACTIVE'}</p>
+                    <p><strong>Start Time:</strong> ${new Date(process.startTime).toLocaleString()}</p>
+                    <p><strong>End Time:</strong> ${process.endTime ? new Date(process.endTime).toLocaleString() : 'Still running'}</p>
+                    <p><strong>Duration:</strong> ${process.durationInMillis ? (process.durationInMillis / 1000) + ' seconds' : 'N/A'}</p>
+                </div>
+
+                <h3>Activities (${activities.length})</h3>
+                <table>
+                    <tr>
+                        <th>Activity Name</th>
+                        <th>Activity Type</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Duration (s)</th>
+                    </tr>
+                    ${activities.map(a => `
+                        <tr>
+                            <td>${a.activityName || a.activityId}</td>
+                            <td>${a.activityType}</td>
+                            <td>${new Date(a.startTime).toLocaleString()}</td>
+                            <td>${a.endTime ? new Date(a.endTime).toLocaleString() : 'Running'}</td>
+                            <td>${a.durationInMillis ? (a.durationInMillis / 1000).toFixed(2) : 'N/A'}</td>
+                        </tr>
+                    `).join('')}
+                </table>
+
+                <h3>Tasks (${tasks.length})</h3>
+                <table>
+                    <tr>
+                        <th>Task Name</th>
+                        <th>Assignee</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Duration (s)</th>
+                    </tr>
+                    ${tasks.map(t => `
+                        <tr>
+                            <td>${t.name || t.taskDefinitionKey}</td>
+                            <td>${t.assignee || 'Unassigned'}</td>
+                            <td>${new Date(t.startTime).toLocaleString()}</td>
+                            <td>${t.endTime ? new Date(t.endTime).toLocaleString() : 'Not completed'}</td>
+                            <td>${t.durationInMillis ? (t.durationInMillis / 1000).toFixed(2) : 'N/A'}</td>
+                        </tr>
+                    `).join('')}
+                </table>
+
+                <h3>Variables (${variables.length})</h3>
+                <table>
+                    <tr>
+                        <th>Variable Name</th>
+                        <th>Type</th>
+                        <th>Value</th>
+                        <th>Create Time</th>
+                    </tr>
+                    ${variables.map(v => `
+                        <tr>
+                            <td>${v.name}</td>
+                            <td>${v.variableTypeName}</td>
+                            <td>${JSON.stringify(v.value)}</td>
+                            <td>${new Date(v.createTime).toLocaleString()}</td>
+                        </tr>
+                    `).join('')}
+                </table>
+            `;
+            document.getElementById('results').innerHTML = html;
+        }
+
+        function displayProcessList(processes, title) {
+            const html = `
+                <h2>${title} (${processes.length})</h2>
+                <table>
+                    <tr>
+                        <th>ID</th>
+                        <th>Process Definition</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Duration (s)</th>
+                        <th>Actions</th>
+                    </tr>
+                    ${processes.map(p => `
+                        <tr>
+                            <td>${p.id}</td>
+                            <td>${p.processDefinitionKey}</td>
+                            <td>${new Date(p.startTime).toLocaleString()}</td>
+                            <td>${p.endTime ? new Date(p.endTime).toLocaleString() : 'Running'}</td>
+                            <td>${p.durationInMillis ? (p.durationInMillis / 1000).toFixed(2) : 'N/A'}</td>
+                            <td><button onclick="viewDetails('${p.id}')">View Details</button></td>
+                        </tr>
+                    `).join('')}
+                </table>
+            `;
+            document.getElementById('results').innerHTML = html;
+        }
+
+        function viewDetails(instanceId) {
+            document.getElementById('processInstanceId').value = instanceId;
+            loadProcessHistory();
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            document.getElementById('error').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
+

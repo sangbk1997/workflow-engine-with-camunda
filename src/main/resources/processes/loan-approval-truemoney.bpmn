@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1eeqjpz" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.42.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.24.0">
+  <bpmn:process id="loanApprovalApp" isExecutable="true" camunda:historyTimeToLive="180">
+    <bpmn:startEvent id="startEvent" name="Loan Application Received" camunda:formRef="" camunda:formRefBinding="latest">
+      <bpmn:outgoing>Flow_1ggprer</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="submitApplication" name="Submit Loan Application">
+      <bpmn:incoming>Flow_1ggprer</bpmn:incoming>
+      <bpmn:outgoing>Flow_190xgb7</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="checkCredit" name="Check Credit Score" camunda:delegateExpression="${loanCheckDelegate}">
+      <bpmn:incoming>Flow_15il68h</bpmn:incoming>
+      <bpmn:outgoing>Flow_06qymie</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="gatewayEligible" name="Eligible">
+      <bpmn:extensionElements />
+      <bpmn:incoming>Flow_06qymie</bpmn:incoming>
+      <bpmn:outgoing>Flow_1tfv0ji</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1tosz3b</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_06qymie" sourceRef="checkCredit" targetRef="gatewayEligible" />
+    <bpmn:userTask id="managerApproval" name="Manager Approval">
+      <bpmn:incoming>Flow_1tfv0ji</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ldsh4h</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0dwzj2p</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="RejectedEndEvent" name="Rejected">
+      <bpmn:incoming>Flow_1tosz3b</bpmn:incoming>
+      <bpmn:incoming>Flow_0dwzj2p</bpmn:incoming>
+      <bpmn:incoming>Flow_1cyjdr6</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="ApprovedEndEvent" name="Approved">
+      <bpmn:incoming>Flow_0ldsh4h</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1ggprer" sourceRef="startEvent" targetRef="submitApplication" />
+    <bpmn:sequenceFlow id="Flow_1tfv0ji" name="True" sourceRef="gatewayEligible" targetRef="managerApproval">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${eligible == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1tosz3b" name="False" sourceRef="gatewayEligible" targetRef="RejectedEndEvent">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${eligible == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0ldsh4h" name="Approve" sourceRef="managerApproval" targetRef="ApprovedEndEvent">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${approved == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0dwzj2p" name="Reject" sourceRef="managerApproval" targetRef="RejectedEndEvent">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${approved == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:userTask id="Activity_1fldcni" name="Review Loan Application">
+      <bpmn:incoming>Flow_190xgb7</bpmn:incoming>
+      <bpmn:outgoing>Flow_15il68h</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1cyjdr6</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_190xgb7" sourceRef="submitApplication" targetRef="Activity_1fldcni" />
+    <bpmn:sequenceFlow id="Flow_15il68h" name="Approve" sourceRef="Activity_1fldcni" targetRef="checkCredit">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${pass_review == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_1cyjdr6" name="Reject" sourceRef="Activity_1fldcni" targetRef="RejectedEndEvent">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${pass_review == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1j1nwvr">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="startEvent">
+        <dc:Bounds x="182" y="162" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="160" y="205" width="81" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1kluuso_di" bpmnElement="submitApplication">
+        <dc:Bounds x="310" y="140" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0pyn16t_di" bpmnElement="checkCredit">
+        <dc:Bounds x="530" y="140" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1i5ekx8_di" bpmnElement="gatewayEligible" isMarkerVisible="true">
+        <dc:Bounds x="685" y="155" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="745" y="173" width="36" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1eken60" bpmnElement="managerApproval">
+        <dc:Bounds x="820" y="80" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1eqi3qp_di" bpmnElement="RejectedEndEvent">
+        <dc:Bounds x="852" y="232" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="848" y="275" width="44" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0vueri7" bpmnElement="ApprovedEndEvent">
+        <dc:Bounds x="1002" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="996" y="145" width="48" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1fldcni_di" bpmnElement="Activity_1fldcni">
+        <dc:Bounds x="420" y="270" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_06qymie_di" bpmnElement="Flow_06qymie">
+        <di:waypoint x="630" y="180" />
+        <di:waypoint x="685" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ggprer_di" bpmnElement="Flow_1ggprer">
+        <di:waypoint x="218" y="180" />
+        <di:waypoint x="310" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1tfv0ji_di" bpmnElement="Flow_1tfv0ji">
+        <di:waypoint x="710" y="155" />
+        <di:waypoint x="710" y="150" />
+        <di:waypoint x="820" y="150" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="738" y="133" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1tosz3b_di" bpmnElement="Flow_1tosz3b">
+        <di:waypoint x="710" y="205" />
+        <di:waypoint x="710" y="250" />
+        <di:waypoint x="852" y="250" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="712" y="225" width="27" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ldsh4h_di" bpmnElement="Flow_0ldsh4h">
+        <di:waypoint x="920" y="120" />
+        <di:waypoint x="1002" y="120" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="941" y="102" width="41" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0dwzj2p_di" bpmnElement="Flow_0dwzj2p">
+        <di:waypoint x="870" y="160" />
+        <di:waypoint x="870" y="232" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="874" y="193" width="32" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_190xgb7_di" bpmnElement="Flow_190xgb7">
+        <di:waypoint x="360" y="220" />
+        <di:waypoint x="360" y="245" />
+        <di:waypoint x="430" y="245" />
+        <di:waypoint x="430" y="270" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15il68h_di" bpmnElement="Flow_15il68h">
+        <di:waypoint x="470" y="270" />
+        <di:waypoint x="470" y="245" />
+        <di:waypoint x="580" y="245" />
+        <di:waypoint x="580" y="220" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="505" y="227" width="41" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1cyjdr6_di" bpmnElement="Flow_1cyjdr6">
+        <di:waypoint x="520" y="310" />
+        <di:waypoint x="686" y="310" />
+        <di:waypoint x="686" y="250" />
+        <di:waypoint x="852" y="250" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="594" y="293" width="32" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
